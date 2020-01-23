@@ -4,7 +4,6 @@ from __future__ import print_function
 import sys
 import cv2
 import editdistance
-#from preprocessing_shared3 import processImg
 from gingerit.gingerit import GingerIt
 from DataLoader import DataLoader, Batch
 from Model import Model, DecoderType
