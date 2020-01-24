@@ -1,10 +1,12 @@
 package com.example.myapplication;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -17,9 +19,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -31,6 +35,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -46,12 +51,16 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
 
     DatabaseHelper myDB;
     String filePath;
+    String scannedFilePath;
 
     Bitmap photo;
     File photoFile = null;
 
     ImageButton btnTakePic;
     ImageButton btnOpenGallery;
+    ProgressBar progressBar;
+    ListAdapter listAdapter;
+    ArrayList<String> theList;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +74,8 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
             }
         });
         btnOpenGallery = findViewById(R.id.btnOpenGallery);
+        progressBar = findViewById(R.id.progressBar3);
+        progressBar.setVisibility(View.GONE);
         btnOpenGallery.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
@@ -72,12 +83,12 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
             }
         });
 
-        ListView listView = (ListView) findViewById(R.id.listview);
+        final ListView listView = (ListView) findViewById(R.id.listview);
         listView.setOnItemClickListener(this);
 
         myDB = new DatabaseHelper(this);
 
-        ArrayList<String> theList = new ArrayList<>();
+        theList = new ArrayList<>();
         Cursor data = myDB.getListContents();
 
         if(data.getCount() == 0){
@@ -85,22 +96,59 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
         }else{
             while(data.moveToNext()){
                 theList.add(data.getString(1));
-                ListAdapter listAdapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,theList);
-                listView.setAdapter(listAdapter);
             }
         }
+        listAdapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,theList);
+        listView.setAdapter(listAdapter);
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, final long id) {
+                final int which_item = position;
+                new AlertDialog.Builder(ScanListActivity.this)
+                        .setIcon(android.R.drawable.ic_delete)
+                        .setTitle("Etes-vous sur ?")
+                        .setMessage("Voulez-vous supprimer ce scan ?")
+                        .setPositiveButton("Oui", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String currentTitle = theList.get(which_item);
+                                myDB.deleteData(theList.get(which_item));
+                                Cursor data = myDB.getListContents();
+
+                                if(data.getCount() == 0){
+                                    theList.clear();
+                                    Intent intent = new Intent(ScanListActivity.this,NavigatorActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                }else{
+                                    theList.clear();
+                                    while(data.moveToNext()){
+                                        if(!data.getString(1).equals(currentTitle)) {
+                                            theList.add(data.getString(1));
+                                        }
+                                    }
+                                }
+                                ((BaseAdapter) listAdapter).notifyDataSetChanged();
+                            }
+                        })
+                        .setNegativeButton("Non",null)
+                        .show();
+                return true;
+            }
+        });
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Cursor data = myDB.getDataAt(id);
+        Cursor data = myDB.getDataAt(theList.get(position));
         data.moveToFirst();
         Intent i = new Intent(ScanListActivity.this, OpenScanActivity.class);
         String scannedText;
-        do{
-            scannedText = data.getString(data.getColumnIndex("ITEM2"));
-            i.putExtra("key",scannedText);
-        }while(data.moveToNext());
+        scannedText = data.getString(data.getColumnIndex("ITEM2"));
+        scannedFilePath = data.getString(data.getColumnIndex("ITEM3"));
+        i.putExtra("key",scannedText);
+        i.putExtra("filePath",scannedFilePath);
         startActivity(i);
     }
 
@@ -187,6 +235,7 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
         Retrofit retrofit = NetworkClient.getRetrofit();
         UploadApis uploadApis = retrofit.create(UploadApis.class);
         Call<JsonElement> call = uploadApis.uploadImage(filePart, description);
+        progressBar.setVisibility(View.VISIBLE);
         call.enqueue(new Callback<JsonElement>() {
             @Override
             public void onResponse(Call<JsonElement> call, final Response<JsonElement> response) {
@@ -197,6 +246,7 @@ public class ScanListActivity extends AppCompatActivity implements AdapterView.O
                 i.putExtra("key",result);
                 i.putExtra("filePath",filePath);
                 startActivity(i);
+                progressBar.setVisibility(View.GONE);
                 finish();
             }
 

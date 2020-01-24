@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -54,6 +55,8 @@ public class EmptyScanActivity extends AppCompatActivity {
     TextView textView;
     TextView textView2;
     ImageView imageView2;
+    ProgressBar progressBar;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -71,6 +74,8 @@ public class EmptyScanActivity extends AppCompatActivity {
             }
         });
         btnOpenGallery = findViewById(R.id.btnOpenGallery);
+        progressBar = findViewById(R.id.progressBar3);
+        progressBar.setVisibility(View.GONE);
         btnOpenGallery.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
@@ -170,6 +175,7 @@ public class EmptyScanActivity extends AppCompatActivity {
         Retrofit retrofit = NetworkClient.getRetrofit();
         UploadApis uploadApis = retrofit.create(UploadApis.class);
         Call<JsonElement> call = uploadApis.uploadImage(filePart, description);
+        progressBar.setVisibility(View.VISIBLE);
         call.enqueue(new Callback<JsonElement>() {
             @Override
             public void onResponse(Call<JsonElement> call, final Response<JsonElement> response) {
@@ -180,6 +186,7 @@ public class EmptyScanActivity extends AppCompatActivity {
                 i.putExtra("key",result);
                 i.putExtra("filePath",filePath);
                 startActivity(i);
+                progressBar.setVisibility(View.GONE);
                 finish();
             }
 

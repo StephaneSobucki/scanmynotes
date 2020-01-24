@@ -13,13 +13,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL1 = "ID";
     public static final String COL2 = "ITEM1";
     public static final String COL3 = "ITEM2";
+    public static final String COL4 = "ITEM3";
+    public static final String COL5 = "ITEM4";
 
     public DatabaseHelper(Context context){super(context,DATABASE_NAME,null,1);}
 
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String createTable = "CREATE TABLE " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, " + "ITEM1 TEXT, ITEM2 TEXT)";
+        String createTable = "CREATE TABLE " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, " + "ITEM1 TEXT, ITEM2 TEXT, ITEM3 TEXT, ITEM4 TEXT)";
         db.execSQL(createTable);
     }
 
@@ -28,11 +30,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
     }
 
-    public boolean addData(String title, String content){
+    public boolean addData(String title, String content, String filePath, String date){
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COL2, title);
         contentValues.put(COL3, content);
+        contentValues.put(COL4, filePath);
+        contentValues.put(COL5, date);
 
         long result = db.insert(TABLE_NAME, null, contentValues);
 
@@ -50,11 +54,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return data;
     }
 
-    public Cursor getDataAt(long index){
+    public Cursor getDataAt(String title){
         SQLiteDatabase db = this.getReadableDatabase();
-        index++;
-        Cursor data = db.rawQuery("SELECT * FROM " + TABLE_NAME + " WHERE ID = " + index, null);
+        Cursor data = db.rawQuery("SELECT * FROM " + TABLE_NAME + " WHERE " + COL2 + "= '" + title + "'", null);
         return data;
+    }
+
+    public void deleteData(String title){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + COL2 + "= '" + title + "'");
+        db.close();
     }
 
 }

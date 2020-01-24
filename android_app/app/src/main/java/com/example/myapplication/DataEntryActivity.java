@@ -26,6 +26,7 @@ public class DataEntryActivity extends AppCompatActivity {
     String name;
     String filePath;
     Bitmap photo;
+    String date;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,7 +35,8 @@ public class DataEntryActivity extends AppCompatActivity {
         textView2 = findViewById(R.id.textView2);
         textView4 = findViewById(R.id.textView4);
         imageView2 = findViewById(R.id.core_image);
-        name = "Scan du " + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        date = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        name = "Scan du " + date;
         textView4.setText(name);
         value = extras.getString("key");
         filePath = extras.getString("filePath");
@@ -51,15 +53,15 @@ public class DataEntryActivity extends AppCompatActivity {
                 Intent i = new Intent(DataEntryActivity.this, ScanListActivity.class);
                 value = textView2.getText().toString();
                 name = textView4.getText().toString();
-                addData(name,value);
+                addData(name,value,filePath,date);
                 startActivity(i);
                 finish();
             }
         });
     }
 
-    public void addData(String title, String content){
-        boolean insertData = myDB.addData(title, content);
+    public void addData(String title, String content, String filePath, String date){
+        boolean insertData = myDB.addData(title, content, filePath, date);
         if(insertData == true){
             System.out.println("Data added to the database!");
         }

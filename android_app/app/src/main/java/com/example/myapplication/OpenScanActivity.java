@@ -3,11 +3,14 @@ package com.example.myapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
@@ -30,13 +33,20 @@ public class OpenScanActivity extends AppCompatActivity {
     TextView textView;
     Button button;
     String pdfPath;
+    String filePath;
     Uri path;
+    Bitmap photo;
+    ImageView imageView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.open_scan_activity);
         Bundle extras = getIntent().getExtras();
         text = extras.getString("key");
+        filePath = extras.getString("filePath");
+        imageView = findViewById(R.id.core_image);
+        photo = BitmapFactory.decodeFile(filePath);
+        imageView.setImageBitmap(photo);
         textView = findViewById(R.id.textView);
         textView.setText(text);
         button = findViewById(R.id.button);
