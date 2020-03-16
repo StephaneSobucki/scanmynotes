@@ -3,29 +3,19 @@ from __future__ import print_function
 
 import sys
 import cv2
-import editdistance
-from gingerit.gingerit import GingerIt
 from DataLoader import DataLoader, Batch
 from Model import Model, DecoderType
-from SamplePreprocessor import preprocess
 from flask import Flask, render_template, request, jsonify, send_file
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 from werkzeug.datastructures import ImmutableMultiDict
+from SamplePreprocessor import preprocess
+from gingerit.gingerit import GingerIt
 import numpy as np
 import os
 import subprocess
-from WordSegmentation import wordSegmentation, prepareImg, lineSegmentation
 
 app = Flask(__name__)
 parser = GingerIt()
-
-class FilePaths:
-    fnCharList = '../model/charList.txt'
-    fnAccuracy = '../model/accuracy.txt'
-    fnTrain = '../data/'
-    fnInfer = '../data/test.png'
-    fnCorpus = '../data/corpus.txt'
-
 
 def infer(model, fnImg):
     img = preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
@@ -42,37 +32,13 @@ def upload_file():
         fulltxt = ""
         f = request.files["newimage"]
         f.save(secure_filename(f.filename))
-        originImage = cv2.imread(f.filename)
-        cropImg = lineSegmentation(originImage)
-        j=0
-        for (n,I) in enumerate(cropImg):   
-            img_read = I
+        subprocess.run(["text_segmentation/bin/./text_segmentation",f.filename,f.filename+"d"])
+        words = os.listdir(f.filename+"d/words")
+        words.sort()
 
-            if img_read.shape[0] < 70:
-                scale = 3.53 
-                width = int(img_read.shape[1] * scale)
-                height = int(img_read.shape[0] * scale)
-                dim = (width, height)
-                # resize image
-                img_read = cv2.resize(img_read, dim, interpolation = cv2.INTER_AREA)
-
-            nb_pixel = img_read.shape[0]*img_read.shape[1]
-            white_percent = np.count_nonzero(img_read-255)/(img_read.shape[0]*img_read.shape[1])
-            ratio_h_l = img_read.shape[0]/img_read.shape[1]
-
-            prepare_param = nb_pixel * white_percent * ratio_h_l * 0.015
-            img = prepareImg(img_read,prepare_param)
-
-            res = wordSegmentation(img, kernelSize=25, sigma=11, theta=7, minArea=100)
-            res = sorted(res, key = lambda x:x[2])
-
-            for (x,m) in enumerate(res):
-                (wordBox, wordImg, xpos, ypos) = m
-                (x, y, w, h) = wordBox
-                cv2.imwrite('data/%d.jpg'%j, wordImg) # save word
-                prediction = infer(model, 'data/%d.jpg'%j)
-                fulltxt += " " + prediction
-                j = j+1
+        for word in words:
+            prediction = infer(model, f.filename+"d/words/"+word)
+            fulltxt += " " + prediction
 
     fulltxt = parser.parse(fulltxt)['result']
 
