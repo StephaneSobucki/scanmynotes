@@ -6,7 +6,7 @@ We serve the application using Nginx, uWSGI and Flask. The Android app is used t
 
 
 ## Demonstration
-
+Click on the image below to see the demonstration video on youtube.
 [![](https://img.youtube.com/vi/KUxibDm5keg/0.jpg)](https://www.youtube.com/watch?v=KUxibDm5keg)
 
 
